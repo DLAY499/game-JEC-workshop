@@ -1,0 +1,2162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Bungee Monkey - Jungle Canopy Physics Arcade</title>
+  <meta name="description" content="Swing through the endless jungle canopy with elastic bungee physics in Bungee Monkey!" />
+  <meta property="og:title" content="Bungee Monkey - Jungle Canopy Physics Arcade" />
+  <meta property="og:description" content="Swing through the endless jungle canopy with elastic bungee physics in Bungee Monkey!" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Paytone+One&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #081910;
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #ffffff;
+      touch-action: none;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #081910;
+    }
+
+    canvas#gameCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    /* UI Overlay Layer */
+    .ui-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      z-index: 10;
+    }
+
+    /* Top HUD */
+    .hud-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: clamp(10px, 2.5vw, 20px);
+      width: 100%;
+    }
+
+    .hud-left {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .score-badge {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      background: rgba(14, 43, 27, 0.85);
+      border: 1.5px solid rgba(74, 222, 128, 0.4);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 6px 16px;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .score-label {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #86efac;
+    }
+
+    .score-value {
+      font-family: 'Paytone One', sans-serif;
+      font-size: clamp(24px, 4vw, 36px);
+      line-height: 1;
+      color: #fef08a;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    .best-score-text {
+      font-size: 12px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.75);
+      padding-left: 6px;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    }
+
+    .hud-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .distance-meter {
+      background: rgba(14, 43, 27, 0.85);
+      border: 1.5px solid rgba(250, 204, 21, 0.4);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 6px 14px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-family: 'Paytone One', sans-serif;
+      font-size: clamp(16px, 2.5vw, 22px);
+      color: #ffffff;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .distance-meter span.unit {
+      font-size: 12px;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      color: #fde047;
+      letter-spacing: 0.5px;
+    }
+
+    .combo-pill {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.9);
+      transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      font-family: 'Paytone One', sans-serif;
+      font-size: 12.5px;
+      letter-spacing: 1px;
+      padding: 4px 14px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      color: #ffffff;
+      box-shadow: 0 4px 16px rgba(239, 68, 68, 0.6);
+    }
+
+    .combo-pill.active {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .hud-right {
+      display: flex;
+      gap: 8px;
+      pointer-events: auto;
+    }
+
+    .hud-btn {
+      background: rgba(14, 43, 27, 0.85);
+      border: 1.5px solid rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.15s ease;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    }
+
+    .hud-btn:hover {
+      background: rgba(34, 197, 94, 0.35);
+      border-color: rgba(74, 222, 128, 0.7);
+      transform: translateY(-2px);
+    }
+
+    .hud-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* Modals (Start, Game Over, Paused) */
+    .modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(11, 35, 22, 0.75) 0%, rgba(5, 18, 11, 0.94) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 20;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+
+    .modal-overlay.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: linear-gradient(165deg, #163f29 0%, #0c2518 100%);
+      border: 2px solid #22c55e;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 35px rgba(34, 197, 94, 0.3);
+      border-radius: 24px;
+      padding: clamp(22px, 4.5vw, 34px);
+      max-width: 440px;
+      width: 100%;
+      text-align: center;
+      transform: translateY(20px) scale(0.95);
+      transition: transform 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .modal-overlay.visible .modal-card {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -50%;
+      width: 200%;
+      height: 100%;
+      background: radial-gradient(circle at 50% 0%, rgba(74, 222, 128, 0.18) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .game-title {
+      font-family: 'Paytone One', sans-serif;
+      font-size: clamp(32px, 6.5vw, 44px);
+      line-height: 1.05;
+      color: #fef08a;
+      text-shadow: 0 4px 0 #15803d, 0 8px 24px rgba(0, 0, 0, 0.7);
+      letter-spacing: -0.5px;
+    }
+
+    .game-tagline {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #86efac;
+      margin-top: 4px;
+    }
+
+    .modal-badge-row {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    .stat-pill {
+      background: rgba(9, 28, 18, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 8px 12px;
+      flex: 1;
+    }
+
+    .stat-pill-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: rgba(255, 255, 255, 0.65);
+    }
+
+    .stat-pill-val {
+      font-family: 'Paytone One', sans-serif;
+      font-size: 20px;
+      color: #fde047;
+      margin-top: 2px;
+    }
+
+    .tutorial-box {
+      background: rgba(9, 28, 18, 0.7);
+      border: 1px dashed rgba(74, 222, 128, 0.45);
+      border-radius: 14px;
+      padding: 14px;
+      margin: 16px 0;
+      text-align: left;
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: #dcfce7;
+    }
+
+    .tutorial-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .tutorial-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .tut-icon {
+      font-size: 20px;
+      width: 26px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .primary-btn {
+      width: 100%;
+      background: linear-gradient(180deg, #4ade80 0%, #16a34a 100%);
+      color: #052e16;
+      font-family: 'Paytone One', sans-serif;
+      font-size: 19px;
+      letter-spacing: 0.5px;
+      padding: 14px 22px;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      box-shadow: 0 6px 0 #14532d, 0 12px 24px rgba(22, 163, 74, 0.4);
+      transition: all 0.15s ease;
+      position: relative;
+      margin-top: 6px;
+    }
+
+    .primary-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 0 #14532d, 0 16px 28px rgba(22, 163, 74, 0.5);
+      background: linear-gradient(180deg, #86efac 0%, #22c55e 100%);
+    }
+
+    .primary-btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #14532d, 0 6px 12px rgba(22, 163, 74, 0.3);
+    }
+
+    .secondary-btn {
+      background: transparent;
+      border: 1.5px solid rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      padding: 10px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      margin-top: 10px;
+      width: 100%;
+      transition: all 0.15s ease;
+    }
+
+    .secondary-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    /* Live In-Game State Banner (Dynamic guidance) */
+    .touch-prompt {
+      position: absolute;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Outfit', sans-serif;
+      font-size: 13.5px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #ffffff;
+      background: rgba(11, 35, 22, 0.85);
+      border: 1.5px solid rgba(74, 222, 128, 0.4);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 8px 22px;
+      border-radius: 24px;
+      pointer-events: none;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      animation: bannerFloat 2s infinite ease-in-out;
+    }
+
+    @keyframes bannerFloat {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(-3px); }
+    }
+
+    .new-record-tag {
+      display: inline-block;
+      font-family: 'Paytone One', sans-serif;
+      font-size: 13px;
+      background: #eab308;
+      color: #422006;
+      padding: 3px 12px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(234, 179, 8, 0.4);
+      margin-bottom: 8px;
+      animation: recordWiggle 1s infinite alternate ease-in-out;
+    }
+
+    @keyframes recordWiggle {
+      from { transform: rotate(-3deg) scale(1); }
+      to { transform: rotate(3deg) scale(1.05); }
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- UI Overlay Layer -->
+    <div class="ui-layer">
+      <!-- Top HUD -->
+      <div class="hud-top">
+        <div class="hud-left">
+          <div class="score-badge">
+            <span class="score-label">Score</span>
+            <span id="hud-score" class="score-value">0</span>
+          </div>
+          <div id="hud-best" class="best-score-text">BEST: 0</div>
+        </div>
+
+        <div class="hud-center">
+          <div class="distance-meter">
+            <span id="hud-distance">0</span>
+            <span class="unit">M</span>
+          </div>
+          <div id="hud-combo" class="combo-pill">SWING COMBO x2</div>
+        </div>
+
+        <div class="hud-right">
+          <button id="btn-sound" class="hud-btn" aria-label="Toggle Sound" title="Sound Mute/Unmute">🔊</button>
+          <button id="btn-pause" class="hud-btn" aria-label="Pause Game" title="Pause Game">⏸</button>
+        </div>
+      </div>
+
+      <div id="hud-prompt" class="touch-prompt">RELEASE to Launch · HOLD to Catch Next Branch</div>
+    </div>
+
+    <!-- Start / Title Screen Modal -->
+    <div id="modal-start" class="modal-overlay visible">
+      <div class="modal-card">
+        <div style="margin-bottom: 12px;">
+          <div class="game-title">🐒 BUNGEE<br>MONKEY</div>
+          <div class="game-tagline">Jungle Canopy Physics Arcade</div>
+        </div>
+
+        <div class="tutorial-box">
+          <div class="tutorial-item">
+            <span class="tut-icon">🚀</span>
+            <span><strong>RELEASE:</strong> Launch off your swing trajectory into a soaring canopy arc!</span>
+          </div>
+          <div class="tutorial-item">
+            <span class="tut-icon">🎯</span>
+            <span><strong>HOLD:</strong> Press & hold anywhere to auto-shoot elastic bungee cord to the next branch ahead.</span>
+          </div>
+          <div class="tutorial-item">
+            <span class="tut-icon">🍌</span>
+            <span><strong>BANANAS:</strong> Grab floating bananas for bonus points & combo streaks.</span>
+          </div>
+          <div class="tutorial-item">
+            <span class="tut-icon">⚠️</span>
+            <span><strong>SURVIVE:</strong> Don't drop into the jungle abyss below!</span>
+          </div>
+        </div>
+
+        <div class="modal-badge-row">
+          <div class="stat-pill">
+            <div class="stat-pill-label">Canopy Record</div>
+            <div id="start-best-score" class="stat-pill-val">0</div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-pill-label">Max Distance</div>
+            <div id="start-best-distance" class="stat-pill-val">0m</div>
+          </div>
+        </div>
+
+        <button id="btn-play" class="primary-btn">SWING INTO THE JUNGLE</button>
+      </div>
+    </div>
+
+    <!-- Game Over Screen Modal -->
+    <div id="modal-gameover" class="modal-overlay">
+      <div class="modal-card">
+        <div id="record-banner" class="new-record-tag" style="display: none;">🌟 NEW CANOPY RECORD! 🌟</div>
+        <div class="game-title" style="color: #f87171; text-shadow: 0 4px 0 #991b1b, 0 8px 24px rgba(0,0,0,0.6); font-size: clamp(28px, 6vw, 36px);">
+          CANOPY CRASH!
+        </div>
+        <div class="game-tagline" id="gameover-subtext">The jungle got the best of you!</div>
+
+        <div class="modal-badge-row" style="margin-top: 14px; margin-bottom: 10px;">
+          <div class="stat-pill">
+            <div class="stat-pill-label">Final Score</div>
+            <div id="go-score" class="stat-pill-val" style="color: #fef08a; font-size: 24px;">0</div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-pill-label">Distance</div>
+            <div id="go-distance" class="stat-pill-val">0m</div>
+          </div>
+        </div>
+
+        <div class="modal-badge-row" style="margin-top: 0; margin-bottom: 16px;">
+          <div class="stat-pill">
+            <div class="stat-pill-label">Bananas</div>
+            <div id="go-bananas" class="stat-pill-val" style="color: #fde047;">🍌 0</div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-pill-label">Swings Made</div>
+            <div id="go-swings" class="stat-pill-val">0</div>
+          </div>
+        </div>
+
+        <button id="btn-restart" class="primary-btn">SWING AGAIN</button>
+      </div>
+    </div>
+
+    <!-- Pause Screen Modal -->
+    <div id="modal-pause" class="modal-overlay">
+      <div class="modal-card">
+        <div class="game-title" style="color: #93c5fd; text-shadow: 0 4px 0 #1e40af; font-size: clamp(28px, 6vw, 36px);">
+          JUNGLE REST
+        </div>
+        <div class="game-tagline">Game Paused</div>
+
+        <div style="margin: 24px 0;">
+          <button id="btn-resume" class="primary-btn" style="margin-bottom: 12px;">RESUME SWINGING</button>
+          <button id="btn-pause-restart" class="secondary-btn">RESTART RUN</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // --- Audio Engine (Web Audio API Synthesizer) ---
+      class SoundEngine {
+        constructor() {
+          this.ctx = null;
+          this.enabled = true;
+          this.masterGain = null;
+        }
+
+        init() {
+          if (this.ctx) return;
+          try {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (AudioContextClass) {
+              this.ctx = new AudioContextClass();
+              this.masterGain = this.ctx.createGain();
+              this.masterGain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+              this.masterGain.connect(this.ctx.destination);
+            }
+          } catch (e) {
+            console.warn('AudioContext error:', e);
+          }
+        }
+
+        resume() {
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+          }
+        }
+
+        toggle() {
+          this.enabled = !this.enabled;
+          return this.enabled;
+        }
+
+        playShoot() {
+          if (!this.enabled) return;
+          this.init();
+          this.resume();
+          if (!this.ctx) return;
+
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(520, now);
+          osc.frequency.exponentialRampToValueAtTime(160, now + 0.1);
+
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+          osc.connect(gain);
+          gain.connect(this.masterGain);
+          osc.start(now);
+          osc.stop(now + 0.11);
+        }
+
+        playAttach() {
+          if (!this.enabled) return;
+          this.init();
+          this.resume();
+          if (!this.ctx) return;
+
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(320, now);
+          osc.frequency.exponentialRampToValueAtTime(90, now + 0.12);
+
+          gain.gain.setValueAtTime(0.35, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+          osc.connect(gain);
+          gain.connect(this.masterGain);
+          osc.start(now);
+          osc.stop(now + 0.13);
+        }
+
+        playLaunch(speedRatio = 1.0) {
+          if (!this.enabled) return;
+          this.init();
+          this.resume();
+          if (!this.ctx) return;
+
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          const baseFreq = 260 + Math.min(speedRatio * 200, 440);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(baseFreq, now);
+          osc.frequency.exponentialRampToValueAtTime(baseFreq * 2.0, now + 0.18);
+
+          gain.gain.setValueAtTime(0.28, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+          osc.connect(gain);
+          gain.connect(this.masterGain);
+          osc.start(now);
+          osc.stop(now + 0.21);
+        }
+
+        playBanana() {
+          if (!this.enabled) return;
+          this.init();
+          this.resume();
+          if (!this.ctx) return;
+
+          const now = this.ctx.currentTime;
+          [784, 1046].forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const time = now + idx * 0.05;
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, time);
+
+            gain.gain.setValueAtTime(0.25, time);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.12);
+
+            osc.connect(gain);
+            gain.connect(this.masterGain);
+            osc.start(time);
+            osc.stop(time + 0.13);
+          });
+        }
+
+        playGameOver() {
+          if (!this.enabled) return;
+          this.init();
+          this.resume();
+          if (!this.ctx) return;
+
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(360, now);
+          osc.frequency.linearRampToValueAtTime(110, now + 0.6);
+
+          gain.gain.setValueAtTime(0.35, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+
+          osc.connect(gain);
+          gain.connect(this.masterGain);
+          osc.start(now);
+          osc.stop(now + 0.66);
+        }
+
+        playClick() {
+          if (!this.enabled) return;
+          this.init();
+          this.resume();
+          if (!this.ctx) return;
+
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(800, now);
+          osc.frequency.exponentialRampToValueAtTime(400, now + 0.04);
+
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.04);
+
+          osc.connect(gain);
+          gain.connect(this.masterGain);
+          osc.start(now);
+          osc.stop(now + 0.05);
+        }
+      }
+
+      const sounds = new SoundEngine();
+
+      // --- DOM Elements ---
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d');
+
+      const hudScore = document.getElementById('hud-score');
+      const hudBest = document.getElementById('hud-best');
+      const hudDistance = document.getElementById('hud-distance');
+      const hudCombo = document.getElementById('hud-combo');
+      const hudPrompt = document.getElementById('hud-prompt');
+
+      const btnSound = document.getElementById('btn-sound');
+      const btnPause = document.getElementById('btn-pause');
+      const btnPlay = document.getElementById('btn-play');
+      const btnRestart = document.getElementById('btn-restart');
+      const btnResume = document.getElementById('btn-resume');
+      const btnPauseRestart = document.getElementById('btn-pause-restart');
+
+      const modalStart = document.getElementById('modal-start');
+      const modalGameOver = document.getElementById('modal-gameover');
+      const modalPause = document.getElementById('modal-pause');
+
+      const startBestScore = document.getElementById('start-best-score');
+      const startBestDistance = document.getElementById('start-best-distance');
+      const goScore = document.getElementById('go-score');
+      const goDistance = document.getElementById('go-distance');
+      const goBananas = document.getElementById('go-bananas');
+      const goSwings = document.getElementById('go-swings');
+      const recordBanner = document.getElementById('record-banner');
+      const gameoverSubtext = document.getElementById('gameover-subtext');
+
+      // --- Physics Constants ---
+      const GRAVITY = 980; // px/sec^2
+      const BUNGEE_K = 85.0; // Snappy Hooke's spring constant
+      const BUNGEE_DAMPING = 4.2; // Damping along radial direction
+      const AIR_DRAG = 0.999;
+      const MAX_BUNGEE_RANGE = 560;
+      const MAX_SPEED = 2200;
+
+      // High Scores
+      let highScore = parseInt(localStorage.getItem('bungee_monkey_highscore') || '0', 10);
+      let maxDistanceRecord = parseInt(localStorage.getItem('bungee_monkey_max_dist') || '0', 10);
+
+      // --- Game State Variables ---
+      let gameState = 'START'; // 'START' | 'PLAYING' | 'PAUSED' | 'GAMEOVER'
+      let isHolding = false;
+      let score = 0;
+      let distanceMeters = 0;
+      let bananasCollected = 0;
+      let swingsCount = 0;
+      let comboMultiplier = 1;
+      let consecutiveSwings = 0;
+      let comboTimer = 0;
+      let shakeTime = 0;
+      let shakeIntensity = 0;
+      let screenWidth = window.innerWidth;
+      let screenHeight = window.innerHeight;
+      let dpr = window.devicePixelRatio || 1;
+
+      // --- Monkey Character State ---
+      const monkey = {
+        x: 180,
+        y: 280,
+        vx: 320,
+        vy: 40,
+        radius: 20,
+        angle: 0,
+        angularVelocity: 0,
+        attachedBranch: null,
+        restLength: 130,
+        targetBranch: null,
+        lastAttachedBranch: null,
+        lastBranchCooldown: 0,
+        recoilProgress: 1.0,
+        lastAnchorX: 0,
+        lastAnchorY: 0,
+        reset(initialBranch) {
+          this.attachedBranch = initialBranch || null;
+          if (initialBranch) {
+            this.x = initialBranch.x - 70;
+            this.y = initialBranch.y + 110;
+            this.vx = 260;
+            this.vy = 80;
+            this.restLength = 120;
+          } else {
+            this.x = 180;
+            this.y = 280;
+            this.vx = 320;
+            this.vy = 40;
+            this.restLength = 120;
+          }
+          this.angle = 0;
+          this.angularVelocity = 0;
+          this.targetBranch = null;
+          this.lastAttachedBranch = null;
+          this.lastBranchCooldown = 0;
+          this.recoilProgress = 1.0;
+        }
+      };
+
+      // --- Camera ---
+      const camera = {
+        x: 0,
+        y: 100,
+        targetX: 0,
+        targetY: 100,
+        update(dt) {
+          // Keep monkey around 28% of the screen from the left
+          this.targetX = monkey.x - screenWidth * 0.28;
+          // Keep camera focused on canopy level (Y: 100 to 450)
+          this.targetY = clamp(monkey.y - screenHeight * 0.45, -60, 360);
+
+          const lerpX = 1 - Math.exp(-6 * dt);
+          const lerpY = 1 - Math.exp(-4 * dt);
+          this.x += (this.targetX - this.x) * lerpX;
+          this.y += (this.targetY - this.y) * lerpY;
+        }
+      };
+
+      // --- Procedural Generation Collections ---
+      let branches = [];
+      let bananas = [];
+      let particles = [];
+      let floatTexts = [];
+      let nextBranchX = 0;
+
+      function clamp(val, min, max) {
+        return Math.max(min, Math.min(max, val));
+      }
+
+      function rand(min, max) {
+        return min + Math.random() * (max - min);
+      }
+
+      // --- Branch Generator ---
+      function spawnBranch(x, y, type = 'normal') {
+        const branch = {
+          id: Math.random(),
+          x,
+          y,
+          initialY: y,
+          length: rand(110, 160),
+          thickness: rand(14, 20),
+          type, // 'normal' | 'moving' | 'spring'
+          anchorOffsetY: 0,
+          anchorOffsetVy: 0,
+          swayPhase: Math.random() * Math.PI * 2,
+          swaySpeed: rand(1.6, 2.6),
+          swayAmplitude: type === 'moving' ? rand(35, 60) : 0,
+          leafCount: Math.floor(rand(4, 7)),
+          hasFlower: Math.random() < 0.35,
+          flowerColor: ['#f43f5e', '#fbbf24', '#c084fc', '#38bdf8'][Math.floor(Math.random() * 4)],
+          color: '#3d2514',
+          mossColor: '#4ade80'
+        };
+
+        branches.push(branch);
+
+        // Bananas in flight arcs
+        if (Math.random() < 0.6) {
+          const bananaY = y - rand(50, 120);
+          const bananaX = x + rand(-40, 70);
+          bananas.push({
+            x: bananaX,
+            y: bananaY,
+            initialY: bananaY,
+            phase: Math.random() * Math.PI * 2,
+            type: Math.random() < 0.22 ? 'bunch' : 'single',
+            collected: false
+          });
+        }
+
+        return branch;
+      }
+
+      function initWorld() {
+        branches = [];
+        bananas = [];
+        particles = [];
+        floatTexts = [];
+
+        // Guaranteed initial branch series
+        const b0 = spawnBranch(240, 190, 'normal');
+        spawnBranch(500, 220, 'normal');
+        spawnBranch(780, 180, 'normal');
+        spawnBranch(1060, 230, 'normal');
+        spawnBranch(1340, 190, 'normal');
+
+        nextBranchX = 1620;
+        updateWorldGeneration(true);
+        return b0;
+      }
+
+      function updateWorldGeneration(force = false) {
+        const spawnHorizon = camera.x + screenWidth + 800;
+
+        while (nextBranchX < spawnHorizon) {
+          const stepX = rand(240, 330);
+          const progressScore = Math.max(score, distanceMeters * 2);
+
+          // Canopy undulating wave
+          const baseHeight = 240 + Math.sin(nextBranchX * 0.002) * 90;
+          const branchY = clamp(baseHeight + rand(-45, 45), 150, 360);
+
+          let branchType = 'normal';
+          if (progressScore > 300 && Math.random() < 0.35) {
+            branchType = 'moving';
+          } else if (progressScore > 700 && Math.random() < 0.25) {
+            branchType = 'spring';
+          }
+
+          spawnBranch(nextBranchX, branchY, branchType);
+          nextBranchX += stepX;
+        }
+
+        // Cleanup objects far behind camera
+        const cullX = camera.x - 600;
+        branches = branches.filter(b => b.x > cullX);
+        bananas = bananas.filter(b => b.x > cullX && !b.collected);
+      }
+
+      // --- Find Best Target Branch ---
+      function findBestTargetBranch() {
+        let bestBranch = null;
+        let lowestCost = Infinity;
+
+        for (let i = 0; i < branches.length; i++) {
+          const b = branches[i];
+          // Skip branch we just detached from if cooling down
+          if (b === monkey.lastAttachedBranch && monkey.lastBranchCooldown > 0) continue;
+
+          const anchorX = b.x;
+          const anchorY = b.y + b.anchorOffsetY;
+
+          const dx = anchorX - monkey.x;
+          const dy = anchorY - monkey.y;
+          const dist = Math.hypot(dx, dy);
+
+          // Must be within range, and generally forward / reachable
+          if (dist > MAX_BUNGEE_RANGE) continue;
+          if (dx < -30) continue; // Behind monkey
+          if (dy > 120 && dx < 80) continue; // Too low under monkey
+
+          // Heuristic: reward forward branches at good swing heights
+          const forwardBonus = Math.max(0, dx * 0.5);
+          const heightCost = Math.max(0, dy * 0.6);
+          const cost = dist - forwardBonus + heightCost;
+
+          if (cost < lowestCost) {
+            lowestCost = cost;
+            bestBranch = b;
+          }
+        }
+
+        return bestBranch;
+      }
+
+      // --- Attach Bungee Cord ---
+      function attachBungee() {
+        if (monkey.attachedBranch) return;
+
+        const target = findBestTargetBranch();
+        if (target) {
+          monkey.attachedBranch = target;
+          const anchorX = target.x;
+          const anchorY = target.y + target.anchorOffsetY;
+          const dist = Math.hypot(anchorX - monkey.x, anchorY - monkey.y);
+
+          // Dynamic rest length for bouncy spring action
+          monkey.restLength = clamp(dist * 0.72, 85, 220);
+
+          // Target flex reaction
+          target.anchorOffsetVy = 140;
+
+          // Sound & Haptics
+          sounds.playShoot();
+          setTimeout(() => sounds.playAttach(), 40);
+
+          // Score & Stats
+          score += 100 * comboMultiplier;
+          swingsCount++;
+          consecutiveSwings++;
+          comboTimer = 3.5;
+
+          if (consecutiveSwings >= 3) {
+            comboMultiplier = Math.min(4, Math.floor(consecutiveSwings / 2));
+            showComboPill(`COMBO x${comboMultiplier}!`);
+          }
+
+          addFloatText(`+${100 * comboMultiplier}`, target.x, target.y - 30, '#86efac');
+          spawnLeafBurst(target.x, target.y, 8);
+          shakeCamera(3, 0.12);
+
+          updatePromptDisplay();
+        }
+      }
+
+      // --- Release Bungee Cord ---
+      function releaseBungee() {
+        if (!monkey.attachedBranch) return;
+
+        const anchor = monkey.attachedBranch;
+        monkey.lastAttachedBranch = anchor;
+        monkey.lastBranchCooldown = 0.35; // 350ms cooldown on same branch
+        monkey.lastAnchorX = anchor.x;
+        monkey.lastAnchorY = anchor.y + anchor.anchorOffsetY;
+        monkey.attachedBranch = null;
+        monkey.recoilProgress = 0;
+
+        const speed = Math.hypot(monkey.vx, monkey.vy);
+        const speedRatio = speed / 800;
+
+        // Launch audio
+        sounds.playLaunch(speedRatio);
+
+        // Flip & Praise on high-speed launches
+        if (speed > 720) {
+          monkey.angularVelocity = (monkey.vx > 0 ? 1 : -1) * clamp(speed * 0.012, 6, 16);
+          shakeCamera(4, 0.16);
+
+          if (monkey.vy < -200) {
+            const praises = ['GREAT LAUNCH!', 'BIG AIR!', 'SUPER SLING!', 'CANOPY ROCKET!'];
+            const praise = praises[Math.floor(Math.random() * praises.length)];
+            addFloatText(praise, monkey.x, monkey.y - 45, '#fef08a', 20);
+          }
+        }
+
+        spawnSpeedStreaks(monkey.x, monkey.y, monkey.vx, monkey.vy);
+        updatePromptDisplay();
+      }
+
+      function updatePromptDisplay() {
+        if (gameState !== 'PLAYING') return;
+        if (monkey.attachedBranch) {
+          hudPrompt.innerText = 'SWINGING! RELEASE to launch forward!';
+          hudPrompt.style.borderColor = 'rgba(250, 204, 21, 0.6)';
+        } else {
+          hudPrompt.innerText = 'AIRBORNE! HOLD anywhere to catch next branch!';
+          hudPrompt.style.borderColor = 'rgba(74, 222, 128, 0.6)';
+        }
+      }
+
+      // --- Particles & FX ---
+      function spawnLeafBurst(x, y, count = 6) {
+        for (let i = 0; i < count; i++) {
+          particles.push({
+            x,
+            y,
+            vx: rand(-110, 110),
+            vy: rand(-130, 40),
+            rot: rand(0, Math.PI * 2),
+            vRot: rand(-5, 5),
+            size: rand(6, 10),
+            color: ['#4ade80', '#22c55e', '#16a34a', '#86efac'][Math.floor(Math.random() * 4)],
+            type: 'leaf',
+            life: 1.0,
+            decay: rand(0.9, 1.5)
+          });
+        }
+      }
+
+      function spawnSpeedStreaks(x, y, vx, vy) {
+        for (let i = 0; i < 5; i++) {
+          particles.push({
+            x: x + rand(-12, 12),
+            y: y + rand(-12, 12),
+            vx: -vx * 0.2 + rand(-25, 25),
+            vy: -vy * 0.2 + rand(-25, 25),
+            size: rand(2, 4),
+            color: 'rgba(255, 255, 255, 0.75)',
+            type: 'streak',
+            life: 0.5,
+            decay: 2.2
+          });
+        }
+      }
+
+      function spawnBananaSparkles(x, y) {
+        for (let i = 0; i < 9; i++) {
+          const angle = (Math.PI * 2 / 9) * i + Math.random() * 0.3;
+          const spd = rand(80, 200);
+          particles.push({
+            x,
+            y,
+            vx: Math.cos(angle) * spd,
+            vy: Math.sin(angle) * spd,
+            size: rand(4, 7),
+            color: ['#fde047', '#fef08a', '#fbbf24', '#ffffff'][Math.floor(Math.random() * 4)],
+            type: 'sparkle',
+            life: 1.0,
+            decay: rand(1.8, 2.5)
+          });
+        }
+      }
+
+      function addFloatText(text, x, y, color = '#ffffff', fontSize = 16) {
+        floatTexts.push({
+          text,
+          x,
+          y,
+          color,
+          fontSize,
+          life: 1.0,
+          vy: -65
+        });
+      }
+
+      function shakeCamera(intensity, duration) {
+        shakeIntensity = intensity;
+        shakeTime = duration;
+      }
+
+      function showComboPill(msg) {
+        hudCombo.innerText = msg;
+        hudCombo.classList.add('active');
+      }
+
+      // --- Main Physics Update Loop ---
+      function update(dt) {
+        if (gameState !== 'PLAYING') return;
+
+        dt = Math.min(dt, 0.05);
+
+        // Branch Cooldown Decay
+        if (monkey.lastBranchCooldown > 0) {
+          monkey.lastBranchCooldown -= dt;
+        }
+
+        // Branch swaying & restoration
+        for (let i = 0; i < branches.length; i++) {
+          const b = branches[i];
+          if (b.type === 'moving') {
+            b.swayPhase += b.swaySpeed * dt;
+            b.y = b.initialY + Math.sin(b.swayPhase) * b.swayAmplitude;
+          }
+
+          if (b.anchorOffsetY !== 0 || b.anchorOffsetVy !== 0) {
+            const kBranch = 160;
+            const dampBranch = 12;
+            const force = -kBranch * b.anchorOffsetY - dampBranch * b.anchorOffsetVy;
+            b.anchorOffsetVy += force * dt;
+            b.anchorOffsetY += b.anchorOffsetVy * dt;
+
+            if (Math.abs(b.anchorOffsetY) < 0.1 && Math.abs(b.anchorOffsetVy) < 0.1) {
+              b.anchorOffsetY = 0;
+              b.anchorOffsetVy = 0;
+            }
+          }
+        }
+
+        // Continuous Auto-Shoot while holding down
+        if (isHolding && !monkey.attachedBranch) {
+          attachBungee();
+        }
+
+        // True Hooke's Law Bungee Physics
+        if (monkey.attachedBranch) {
+          const anchor = monkey.attachedBranch;
+          const ax = anchor.x;
+          const ay = anchor.y + anchor.anchorOffsetY;
+
+          // Vector from anchor to monkey
+          const rx = monkey.x - ax;
+          const ry = monkey.y - ay;
+          const dist = Math.hypot(rx, ry);
+
+          if (dist > 0.001) {
+            // Unit vector towards anchor
+            const ux = -rx / dist;
+            const uy = -ry / dist;
+
+            // Rate of radial cord expansion: dr/dt = (v . r) / dist
+            const radialVelocity = (monkey.vx * rx + monkey.vy * ry) / dist;
+
+            // Spring Force: only applies tension when stretched beyond rest length
+            if (dist > monkey.restLength) {
+              const stretch = dist - monkey.restLength;
+              const springForce = BUNGEE_K * stretch;
+              // Damping resists stretching (dr/dt > 0) and cushions rebound
+              const dampingForce = BUNGEE_DAMPING * radialVelocity;
+              const tension = Math.max(0, springForce + dampingForce);
+
+              // Apply spring acceleration towards anchor
+              monkey.vx += tension * ux * dt;
+              monkey.vy += tension * uy * dt;
+
+              // Elastic reaction on branch
+              anchor.anchorOffsetY = clamp(anchor.anchorOffsetY - uy * tension * 0.012, -22, 28);
+            }
+          }
+        }
+
+        // Gravity & Air Resistance
+        monkey.vy += GRAVITY * dt;
+        monkey.vx *= Math.pow(AIR_DRAG, dt * 60);
+        monkey.vy *= Math.pow(AIR_DRAG, dt * 60);
+
+        // Clamp extreme speeds
+        const currentSpeed = Math.hypot(monkey.vx, monkey.vy);
+        if (currentSpeed > MAX_SPEED) {
+          const factor = MAX_SPEED / currentSpeed;
+          monkey.vx *= factor;
+          monkey.vy *= factor;
+        }
+
+        // Update Position
+        monkey.x += monkey.vx * dt;
+        monkey.y += monkey.vy * dt;
+
+        // Angle & Rotation Dynamics
+        if (monkey.attachedBranch) {
+          const anchor = monkey.attachedBranch;
+          const ay = anchor.y + anchor.anchorOffsetY;
+          const ropeAngle = Math.atan2(monkey.y - ay, monkey.x - anchor.x);
+          const targetAngle = ropeAngle + Math.PI / 2;
+          monkey.angle += (targetAngle - monkey.angle) * 0.25;
+          monkey.angularVelocity = 0;
+        } else {
+          if (Math.abs(monkey.angularVelocity) > 0.1) {
+            monkey.angle += monkey.angularVelocity * dt;
+            monkey.angularVelocity *= Math.pow(0.92, dt * 60);
+          } else {
+            const flightAngle = Math.atan2(monkey.vy, monkey.vx);
+            monkey.angle += (flightAngle - monkey.angle) * 0.15;
+          }
+        }
+
+        // Cord recoil animation progress
+        if (monkey.recoilProgress < 1.0) {
+          monkey.recoilProgress += dt * 4.5;
+        }
+
+        // Banana Collection
+        for (let i = 0; i < bananas.length; i++) {
+          const b = bananas[i];
+          if (b.collected) continue;
+
+          b.phase += dt * 3.2;
+          b.y = b.initialY + Math.sin(b.phase) * 6;
+
+          const dist = Math.hypot(monkey.x - b.x, monkey.y - b.y);
+          if (dist < monkey.radius + 24) {
+            b.collected = true;
+            bananasCollected++;
+            const pts = b.type === 'bunch' ? 250 : 75;
+            score += pts * comboMultiplier;
+            sounds.playBanana();
+            spawnBananaSparkles(b.x, b.y);
+            addFloatText(`+${pts * comboMultiplier} 🍌`, b.x, b.y - 20, '#fef08a', 18);
+          }
+        }
+
+        // Particles Update
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.life -= p.decay * dt;
+          if (p.vRot) p.rot += p.vRot * dt;
+          if (p.life <= 0) particles.splice(i, 1);
+        }
+
+        // Float Texts Update
+        for (let i = floatTexts.length - 1; i >= 0; i--) {
+          const ft = floatTexts[i];
+          ft.y += ft.vy * dt;
+          ft.life -= dt * 1.3;
+          if (ft.life <= 0) floatTexts.splice(i, 1);
+        }
+
+        // Screen Shake Update
+        if (shakeTime > 0) {
+          shakeTime -= dt;
+        }
+
+        // Combo Timer Decay
+        if (comboTimer > 0) {
+          comboTimer -= dt;
+          if (comboTimer <= 0) {
+            consecutiveSwings = 0;
+            comboMultiplier = 1;
+            hudCombo.classList.remove('active');
+          }
+        }
+
+        // Distance in meters
+        distanceMeters = Math.max(distanceMeters, Math.floor(monkey.x / 40));
+
+        // Procedural World Generation
+        updateWorldGeneration();
+
+        // Update Camera
+        camera.update(dt);
+
+        // Find Next Target Branch for Reticle
+        monkey.targetBranch = findBestTargetBranch();
+
+        // Screen Fall Abyss Check (Floor of the canopy)
+        const abyssFloor = Math.max(camera.y + screenHeight + 60, 720);
+        if (monkey.y > abyssFloor) {
+          triggerGameOver('Plunged into the jungle depths!');
+        }
+
+        // Behind camera check (only if far behind screen left)
+        if (monkey.x < camera.x - 120 && distanceMeters > 5) {
+          triggerGameOver('Trapped behind the scrolling canopy!');
+        }
+
+        // HUD Updates
+        hudScore.innerText = score.toLocaleString();
+        hudDistance.innerText = distanceMeters.toLocaleString();
+      }
+
+      // --- Game Over Trigger ---
+      function triggerGameOver(reason = 'The jungle got the best of you!') {
+        gameState = 'GAMEOVER';
+        sounds.playGameOver();
+
+        const isNewBest = score > highScore;
+        if (isNewBest) {
+          highScore = score;
+          localStorage.setItem('bungee_monkey_highscore', highScore.toString());
+        }
+
+        if (distanceMeters > maxDistanceRecord) {
+          maxDistanceRecord = distanceMeters;
+          localStorage.setItem('bungee_monkey_max_dist', maxDistanceRecord.toString());
+        }
+
+        goScore.innerText = score.toLocaleString();
+        goDistance.innerText = `${distanceMeters}m`;
+        goBananas.innerText = `🍌 ${bananasCollected}`;
+        goSwings.innerText = swingsCount;
+        gameoverSubtext.innerText = reason;
+
+        recordBanner.style.display = isNewBest && score > 0 ? 'inline-block' : 'none';
+        modalGameOver.classList.add('visible');
+      }
+
+      // --- Start / Reset Run ---
+      function startGame() {
+        modalStart.classList.remove('visible');
+        modalGameOver.classList.remove('visible');
+        modalPause.classList.remove('visible');
+
+        score = 0;
+        distanceMeters = 0;
+        bananasCollected = 0;
+        swingsCount = 0;
+        comboMultiplier = 1;
+        consecutiveSwings = 0;
+        comboTimer = 0;
+        isHolding = false;
+
+        const firstBranch = initWorld();
+        monkey.reset(firstBranch);
+
+        camera.x = 0;
+        camera.y = 100;
+
+        gameState = 'PLAYING';
+        hudScore.innerText = '0';
+        hudDistance.innerText = '0';
+        hudBest.innerText = `BEST: ${highScore}`;
+        hudCombo.classList.remove('active');
+        sounds.playClick();
+        updatePromptDisplay();
+      }
+
+      // --- Master Render ---
+      function render() {
+        ctx.save();
+        ctx.clearRect(0, 0, screenWidth, screenHeight);
+
+        // Screen Shake
+        if (shakeTime > 0) {
+          const sx = (Math.random() - 0.5) * shakeIntensity * 4;
+          const sy = (Math.random() - 0.5) * shakeIntensity * 4;
+          ctx.translate(sx, sy);
+        }
+
+        // 1. Parallax Jungle Background
+        drawJungleBackground();
+
+        // 2. Camera Transform for World Objects
+        ctx.save();
+        ctx.translate(-camera.x, -camera.y);
+
+        drawBranches();
+        drawBananas();
+        drawTargetReticle();
+        drawBungeeCord();
+        drawMonkey();
+        drawParticles();
+        drawFloatTexts();
+
+        ctx.restore();
+
+        // 3. Abyss Warning Glow
+        drawAbyssWarning();
+
+        ctx.restore();
+      }
+
+      // --- Parallax Jungle Background ---
+      function drawJungleBackground() {
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, screenHeight);
+        skyGrad.addColorStop(0, '#0d3822');
+        skyGrad.addColorStop(0.45, '#12482c');
+        skyGrad.addColorStop(0.85, '#0a2918');
+        skyGrad.addColorStop(1, '#05180f');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, screenWidth, screenHeight);
+
+        // Sunbeams
+        ctx.save();
+        ctx.globalAlpha = 0.08;
+        ctx.fillStyle = '#fef08a';
+        for (let i = 0; i < 4; i++) {
+          ctx.beginPath();
+          const beamX = ((i * 380 - camera.x * 0.1) % (screenWidth + 400)) - 100;
+          ctx.moveTo(beamX, 0);
+          ctx.lineTo(beamX + 160, 0);
+          ctx.lineTo(beamX - 80, screenHeight);
+          ctx.lineTo(beamX - 220, screenHeight);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.restore();
+
+        // Layer 1: Distant Misty Tree Silhouettes
+        drawCanopySilhouettes(camera.x * 0.15, screenHeight - 240, '#072416', 0.5, 340);
+
+        // Layer 2: Midground Canopy
+        drawCanopySilhouettes(camera.x * 0.35, screenHeight - 150, '#061c11', 0.8, 220);
+
+        // Ambient spores
+        drawAmbientSpores();
+      }
+
+      function drawCanopySilhouettes(scrollX, baseY, color, alpha, step) {
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.globalAlpha = alpha;
+
+        const startIdx = Math.floor(scrollX / step) - 1;
+        const count = Math.ceil(screenWidth / step) + 3;
+
+        for (let i = 0; i < count; i++) {
+          const idx = startIdx + i;
+          const x = idx * step - scrollX;
+          const h = 180 + Math.sin(idx * 1.7) * 60;
+          const y = baseY - (camera.y * 0.08) - h;
+
+          ctx.beginPath();
+          ctx.arc(x + step * 0.5, y + 60, 90, 0, Math.PI * 2);
+          ctx.arc(x + step * 0.3, y + 90, 70, 0, Math.PI * 2);
+          ctx.arc(x + step * 0.7, y + 80, 75, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillRect(x + step * 0.45, y + 100, 24, screenHeight);
+        }
+        ctx.restore();
+      }
+
+      function drawAmbientSpores() {
+        ctx.save();
+        ctx.fillStyle = '#86efac';
+        const time = Date.now() * 0.001;
+
+        for (let i = 0; i < 16; i++) {
+          const px = (Math.sin(i * 99 + time * 0.4) * 0.5 + 0.5) * screenWidth;
+          const py = (Math.cos(i * 33 + time * 0.5) * 0.5 + 0.5) * screenHeight;
+          const rad = 1.5 + Math.sin(time * 2 + i) * 1;
+          const alpha = 0.2 + Math.sin(time * 3 + i) * 0.15;
+
+          ctx.globalAlpha = alpha;
+          ctx.beginPath();
+          ctx.arc(px, py, Math.max(0.5, rad), 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // --- Branches Artwork ---
+      function drawBranches() {
+        for (let i = 0; i < branches.length; i++) {
+          const b = branches[i];
+          const anchorY = b.y + b.anchorOffsetY;
+
+          ctx.save();
+          ctx.translate(b.x, anchorY);
+
+          // Moving branch indicator glow
+          if (b.type === 'moving') {
+            ctx.strokeStyle = 'rgba(74, 222, 128, 0.25)';
+            ctx.lineWidth = b.thickness + 8;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-b.length * 0.4, 0);
+            ctx.lineTo(b.length * 0.6, 0);
+            ctx.stroke();
+          }
+
+          // Main wooden branch
+          ctx.strokeStyle = b.color;
+          ctx.lineWidth = b.thickness;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(-b.length * 0.4, 0);
+          ctx.quadraticCurveTo(0, 4, b.length * 0.6, -2);
+          ctx.stroke();
+
+          // Green moss topping
+          ctx.strokeStyle = b.mossColor;
+          ctx.lineWidth = b.thickness * 0.4;
+          ctx.beginPath();
+          ctx.moveTo(-b.length * 0.38, -b.thickness * 0.25);
+          ctx.quadraticCurveTo(0, -b.thickness * 0.3, b.length * 0.55, -b.thickness * 0.3);
+          ctx.stroke();
+
+          // Anchor knot target ring
+          ctx.fillStyle = '#27180c';
+          ctx.beginPath();
+          ctx.arc(0, 0, 7, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#86efac';
+          ctx.beginPath();
+          ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Decorative Leaves
+          ctx.fillStyle = '#22c55e';
+          for (let j = 0; j < b.leafCount; j++) {
+            const lx = -b.length * 0.3 + (b.length * 0.85 / b.leafCount) * j;
+            const ly = (j % 2 === 0 ? -1 : 1) * (b.thickness * 0.5 + 4);
+            const rot = (j % 2 === 0 ? -0.4 : 0.4) + Math.sin(b.swayPhase + j) * 0.15;
+
+            ctx.save();
+            ctx.translate(lx, ly);
+            ctx.rotate(rot);
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 10, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+
+          // Tropical Flower decoration
+          if (b.hasFlower) {
+            ctx.save();
+            ctx.translate(b.length * 0.3, -b.thickness * 0.6);
+            ctx.fillStyle = b.flowerColor;
+            for (let f = 0; f < 5; f++) {
+              ctx.rotate((Math.PI * 2) / 5);
+              ctx.beginPath();
+              ctx.ellipse(5, 0, 5, 3, 0, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.fillStyle = '#fef08a';
+            ctx.beginPath();
+            ctx.arc(0, 0, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+
+          ctx.restore();
+        }
+      }
+
+      // --- Aim Reticle & Guide Vine ---
+      function drawTargetReticle() {
+        if (!monkey.targetBranch || monkey.attachedBranch) return;
+
+        const b = monkey.targetBranch;
+        const targetX = b.x;
+        const targetY = b.y + b.anchorOffsetY;
+        const time = Date.now() * 0.006;
+
+        // Subtle guide vine connecting monkey to target
+        ctx.save();
+        ctx.strokeStyle = 'rgba(134, 239, 172, 0.3)';
+        ctx.lineWidth = 1.8;
+        ctx.setLineDash([5, 8]);
+        ctx.beginPath();
+        ctx.moveTo(monkey.x, monkey.y);
+        ctx.lineTo(targetX, targetY);
+        ctx.stroke();
+
+        // Pulsing aim ring
+        ctx.translate(targetX, targetY);
+        const radius = 22 + Math.sin(time * 3) * 4;
+        ctx.strokeStyle = '#fde047';
+        ctx.lineWidth = 2.2;
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.arc(0, 0, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // --- Bananas Artwork ---
+      function drawBananas() {
+        for (let i = 0; i < bananas.length; i++) {
+          const b = bananas[i];
+          if (b.collected) continue;
+
+          ctx.save();
+          ctx.translate(b.x, b.y);
+
+          if (b.type === 'bunch') {
+            ctx.strokeStyle = 'rgba(253, 224, 71, 0.4)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, 20 + Math.sin(b.phase * 2) * 3, 0, Math.PI * 2);
+            ctx.stroke();
+
+            drawSingleBanana(-6, 2, -0.3, 1.15, true);
+            drawSingleBanana(6, 2, 0.3, 1.15, true);
+            drawSingleBanana(0, -2, 0, 1.25, true);
+          } else {
+            drawSingleBanana(0, 0, Math.sin(b.phase) * 0.2, 1.0, false);
+          }
+
+          ctx.restore();
+        }
+      }
+
+      function drawSingleBanana(x, y, rotation, scale = 1.0, isGolden = false) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rotation);
+        ctx.scale(scale, scale);
+
+        ctx.beginPath();
+        ctx.moveTo(-12, -4);
+        ctx.quadraticCurveTo(0, 12, 14, -2);
+        ctx.quadraticCurveTo(0, 7, -12, -4);
+        ctx.fillStyle = isGolden ? '#fef08a' : '#fde047';
+        ctx.fill();
+
+        ctx.strokeStyle = isGolden ? '#f59e0b' : '#ca8a04';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        ctx.fillStyle = '#65a30d';
+        ctx.beginPath();
+        ctx.arc(-12, -4, 2, 0, Math.PI * 2);
+        ctx.arc(14, -2, 1.6, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      // --- Elastic Bungee Cord Artwork ---
+      function drawBungeeCord() {
+        if (monkey.attachedBranch) {
+          const anchor = monkey.attachedBranch;
+          const ax = anchor.x;
+          const ay = anchor.y + anchor.anchorOffsetY;
+
+          const dx = monkey.x - ax;
+          const dy = monkey.y - ay;
+          const dist = Math.hypot(dx, dy);
+
+          ctx.save();
+
+          const isTense = dist > monkey.restLength;
+          const tensionFactor = isTense ? (dist - monkey.restLength) / 100 : 0;
+          const cordThickness = Math.max(2.2, 6.5 - tensionFactor * 2.2);
+
+          const midX = (monkey.x + ax) * 0.5;
+          const sagAmount = isTense ? 0 : Math.min(45, (monkey.restLength - dist) * 0.45);
+          const midY = (monkey.y + ay) * 0.5 + sagAmount;
+
+          // Glowing aura under heavy tension
+          if (isTense && tensionFactor > 0.4) {
+            ctx.strokeStyle = 'rgba(254, 240, 138, 0.4)';
+            ctx.lineWidth = cordThickness + 5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(ax, ay);
+            ctx.lineTo(monkey.x, monkey.y);
+            ctx.stroke();
+          }
+
+          // Main Elastic Cord
+          ctx.strokeStyle = isTense ? '#854d0e' : '#713f12';
+          ctx.lineWidth = cordThickness;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(ax, ay);
+          ctx.quadraticCurveTo(midX, midY, monkey.x, monkey.y);
+          ctx.stroke();
+
+          // Inner vine vein
+          ctx.strokeStyle = '#22c55e';
+          ctx.lineWidth = Math.max(1, cordThickness * 0.35);
+          ctx.beginPath();
+          ctx.moveTo(ax, ay);
+          ctx.quadraticCurveTo(midX, midY, monkey.x, monkey.y);
+          ctx.stroke();
+
+          // Sprouting little leaves along the cord
+          const leafPoints = [0.3, 0.65];
+          leafPoints.forEach((t, idx) => {
+            const lx = (1 - t) * (1 - t) * ax + 2 * (1 - t) * t * midX + t * t * monkey.x;
+            const ly = (1 - t) * (1 - t) * ay + 2 * (1 - t) * t * midY + t * t * monkey.y;
+            ctx.fillStyle = '#4ade80';
+            ctx.beginPath();
+            ctx.ellipse(lx, ly, 5, 2.5, idx === 0 ? 0.6 : -0.6, 0, Math.PI * 2);
+            ctx.fill();
+          });
+
+          ctx.restore();
+        } else if (monkey.recoilProgress < 1.0) {
+          // Snap recoil elastic animation
+          const t = monkey.recoilProgress;
+          const startX = monkey.x;
+          const startY = monkey.y;
+          const endX = monkey.lastAnchorX;
+          const endY = monkey.lastAnchorY;
+
+          const curEndX = endX + (startX - endX) * t;
+          const curEndY = endY + (startY - endY) * t;
+
+          ctx.save();
+          ctx.strokeStyle = `rgba(134, 239, 172, ${1 - t})`;
+          ctx.lineWidth = 3.5 * (1 - t);
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(curEndX, curEndY);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      // --- Monkey Character Artwork ---
+      function drawMonkey() {
+        ctx.save();
+        ctx.translate(monkey.x, monkey.y);
+        ctx.rotate(monkey.angle);
+
+        const speed = Math.hypot(monkey.vx, monkey.vy);
+        const stretch = clamp(speed / 1600, 0, 0.3);
+        ctx.scale(1 + stretch * 0.7, 1 - stretch * 0.4);
+
+        // 1. Curled Monkey Tail
+        ctx.save();
+        ctx.strokeStyle = '#5c351b';
+        ctx.lineWidth = 5.5;
+        ctx.lineCap = 'round';
+        const tailWiggle = Math.sin(Date.now() * 0.01) * 8;
+        ctx.beginPath();
+        ctx.moveTo(-14, 6);
+        ctx.bezierCurveTo(-26, 8, -32 + tailWiggle, -6, -26, -18);
+        ctx.bezierCurveTo(-22, -26, -12, -22, -14, -14);
+        ctx.stroke();
+        ctx.restore();
+
+        // 2. Main Fur Body
+        ctx.fillStyle = '#6b3e21';
+        ctx.beginPath();
+        ctx.ellipse(0, 4, 18, 15, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cream/Peach Belly
+        ctx.fillStyle = '#fed7aa';
+        ctx.beginPath();
+        ctx.ellipse(4, 5, 10, 8, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 3. Round Ears
+        // Left
+        ctx.fillStyle = '#6b3e21';
+        ctx.beginPath();
+        ctx.arc(-14, -12, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fca5a5';
+        ctx.beginPath();
+        ctx.arc(-14, -12, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Right
+        ctx.fillStyle = '#6b3e21';
+        ctx.beginPath();
+        ctx.arc(14, -12, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fca5a5';
+        ctx.beginPath();
+        ctx.arc(14, -12, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 4. Monkey Head
+        ctx.fillStyle = '#6b3e21';
+        ctx.beginPath();
+        ctx.arc(0, -9, 15, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Face Mask
+        ctx.fillStyle = '#fed7aa';
+        ctx.beginPath();
+        ctx.arc(-5, -10, 7, 0, Math.PI * 2);
+        ctx.arc(5, -10, 7, 0, Math.PI * 2);
+        ctx.arc(0, -5, 7.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 5. Shiny Eyes
+        const eyeOffset = monkey.targetBranch ? 1.5 : 0;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(-5, -10, 4, 0, Math.PI * 2);
+        ctx.arc(5, -10, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Pupils
+        ctx.fillStyle = '#1c1917';
+        ctx.beginPath();
+        ctx.arc(-4 + eyeOffset, -10, 2.3, 0, Math.PI * 2);
+        ctx.arc(6 + eyeOffset, -10, 2.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye highlights
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(-4.8, -11, 1, 0, Math.PI * 2);
+        ctx.arc(5.2, -11, 1, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 6. Nose & Smile
+        ctx.fillStyle = '#78350f';
+        ctx.beginPath();
+        ctx.arc(0, -5.5, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#78350f';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        if (speed > 750) {
+          ctx.fillStyle = '#ef4444';
+          ctx.ellipse(0, -2.5, 3.5, 4.5, 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.arc(0, -4, 4, 0.2, Math.PI - 0.2);
+          ctx.stroke();
+        }
+
+        // 7. Red Bandanna
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath();
+        ctx.moveTo(-12, -4);
+        ctx.quadraticCurveTo(0, -1, 12, -4);
+        ctx.lineTo(8, -1);
+        ctx.lineTo(-8, -1);
+        ctx.closePath();
+        ctx.fill();
+
+        const flap = Math.sin(Date.now() * 0.02) * 4;
+        ctx.beginPath();
+        ctx.moveTo(-10, -3);
+        ctx.lineTo(-20 + flap, -5);
+        ctx.lineTo(-18 + flap, 1);
+        ctx.closePath();
+        ctx.fill();
+
+        // 8. Arms & Paws
+        ctx.fillStyle = '#6b3e21';
+        if (monkey.attachedBranch) {
+          ctx.beginPath();
+          ctx.ellipse(-10, -18, 5, 8, -0.4, 0, Math.PI * 2);
+          ctx.ellipse(10, -18, 5, 8, 0.4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#fed7aa';
+          ctx.beginPath();
+          ctx.arc(-11, -23, 4, 0, Math.PI * 2);
+          ctx.arc(11, -23, 4, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.beginPath();
+          ctx.ellipse(14, 4, 7, 4, 0.3, 0, Math.PI * 2);
+          ctx.ellipse(-12, 10, 6, 4, -0.3, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#fed7aa';
+          ctx.beginPath();
+          ctx.arc(19, 5, 3.5, 0, Math.PI * 2);
+          ctx.arc(-15, 12, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+
+      // --- Particles Artwork ---
+      function drawParticles() {
+        for (let i = 0; i < particles.length; i++) {
+          const p = particles[i];
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.globalAlpha = clamp(p.life, 0, 1);
+
+          if (p.type === 'leaf') {
+            ctx.rotate(p.rot);
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, p.size, p.size * 0.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (p.type === 'streak') {
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (p.type === 'sparkle') {
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.moveTo(0, -p.size);
+            ctx.lineTo(p.size * 0.3, -p.size * 0.3);
+            ctx.lineTo(p.size, 0);
+            ctx.lineTo(p.size * 0.3, p.size * 0.3);
+            ctx.lineTo(0, p.size);
+            ctx.lineTo(-p.size * 0.3, p.size * 0.3);
+            ctx.lineTo(-p.size, 0);
+            ctx.lineTo(-p.size * 0.3, -p.size * 0.3);
+            ctx.closePath();
+            ctx.fill();
+          }
+
+          ctx.restore();
+        }
+      }
+
+      // --- Floating Text Popups ---
+      function drawFloatTexts() {
+        for (let i = 0; i < floatTexts.length; i++) {
+          const ft = floatTexts[i];
+          ctx.save();
+          ctx.globalAlpha = clamp(ft.life, 0, 1);
+          ctx.font = `900 ${ft.fontSize}px 'Paytone One', sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.fillStyle = ft.color;
+          ctx.strokeStyle = '#052e16';
+          ctx.lineWidth = 4;
+          ctx.strokeText(ft.text, ft.x, ft.y);
+          ctx.fillText(ft.text, ft.x, ft.y);
+          ctx.restore();
+        }
+      }
+
+      // --- Screen Danger Warning ---
+      function drawAbyssWarning() {
+        const monkeyScreenY = monkey.y - camera.y;
+        const screenMargin = screenHeight - monkeyScreenY;
+
+        if (screenMargin < 180 && monkey.vy > 100) {
+          const intensity = clamp((180 - screenMargin) / 180, 0, 0.75);
+          const warnGrad = ctx.createLinearGradient(0, screenHeight - 120, 0, screenHeight);
+          warnGrad.addColorStop(0, 'rgba(239, 68, 68, 0)');
+          warnGrad.addColorStop(1, `rgba(239, 68, 68, ${intensity})`);
+          ctx.fillStyle = warnGrad;
+          ctx.fillRect(0, screenHeight - 120, screenWidth, 120);
+        }
+      }
+
+      // --- Input Handlers (Pointer, Touch, Keyboard) ---
+      function handleActionStart(e) {
+        if (e && e.target && e.target.closest && (e.target.closest('.hud-btn') || e.target.closest('.modal-card'))) return;
+
+        sounds.init();
+        sounds.resume();
+
+        if (gameState === 'START' || gameState === 'GAMEOVER') {
+          startGame();
+          return;
+        }
+
+        if (gameState !== 'PLAYING') return;
+
+        isHolding = true;
+        if (!monkey.attachedBranch) {
+          attachBungee();
+        }
+      }
+
+      function handleActionEnd(e) {
+        if (gameState !== 'PLAYING') return;
+        isHolding = false;
+        if (monkey.attachedBranch) {
+          releaseBungee();
+        }
+      }
+
+      // Use pointer events for seamless mouse + touch coverage
+      window.addEventListener('pointerdown', (e) => {
+        handleActionStart(e);
+      });
+
+      window.addEventListener('pointerup', (e) => {
+        handleActionEnd(e);
+      });
+
+      window.addEventListener('pointercancel', (e) => {
+        handleActionEnd(e);
+      });
+
+      // Spacebar controls
+      window.addEventListener('keydown', (e) => {
+        sounds.init();
+        sounds.resume();
+
+        if (e.code === 'Space') {
+          e.preventDefault();
+          if (gameState === 'START' || gameState === 'GAMEOVER') {
+            startGame();
+          } else if (gameState === 'PLAYING') {
+            if (!isHolding) {
+              isHolding = true;
+              if (!monkey.attachedBranch) {
+                attachBungee();
+              }
+            }
+          }
+        } else if (e.code === 'KeyP' || e.code === 'Escape') {
+          togglePause();
+        }
+      });
+
+      window.addEventListener('keyup', (e) => {
+        if (e.code === 'Space' && gameState === 'PLAYING') {
+          e.preventDefault();
+          isHolding = false;
+          if (monkey.attachedBranch) {
+            releaseBungee();
+          }
+        }
+      });
+
+      // --- UI Button Listeners ---
+      btnPlay.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sounds.init();
+        sounds.resume();
+        startGame();
+      });
+
+      btnRestart.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sounds.init();
+        sounds.resume();
+        startGame();
+      });
+
+      btnPause.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePause();
+      });
+
+      btnResume.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePause();
+      });
+
+      btnPauseRestart.addEventListener('click', (e) => {
+        e.stopPropagation();
+        startGame();
+      });
+
+      btnSound.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sounds.init();
+        const active = sounds.toggle();
+        btnSound.innerText = active ? '🔊' : '🔇';
+      });
+
+      function togglePause() {
+        if (gameState === 'PLAYING') {
+          gameState = 'PAUSED';
+          modalPause.classList.add('visible');
+        } else if (gameState === 'PAUSED') {
+          gameState = 'PLAYING';
+          modalPause.classList.remove('visible');
+          lastTime = performance.now();
+        }
+      }
+
+      // --- Viewport Scaling & HiDPI ---
+      function resizeCanvas() {
+        screenWidth = window.innerWidth;
+        screenHeight = window.innerHeight;
+        dpr = window.devicePixelRatio || 1;
+
+        canvas.width = Math.floor(screenWidth * dpr);
+        canvas.height = Math.floor(screenHeight * dpr);
+        canvas.style.width = `${screenWidth}px`;
+        canvas.style.height = `${screenHeight}px`;
+
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+
+      // Initial stats on start modal
+      startBestScore.innerText = highScore.toLocaleString();
+      startBestDistance.innerText = `${maxDistanceRecord}m`;
+      hudBest.innerText = `BEST: ${highScore}`;
+
+      // --- Master 60fps Game Loop ---
+      let lastTime = performance.now();
+
+      function gameLoop(now) {
+        const dt = (now - lastTime) / 1000;
+        lastTime = now;
+
+        update(dt);
+        render();
+
+        requestAnimationFrame(gameLoop);
+      }
+
+      requestAnimationFrame((now) => {
+        lastTime = now;
+        requestAnimationFrame(gameLoop);
+      });
+    })();
+  </script>
+</body>
+</html>

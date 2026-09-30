@@ -1,0 +1,6 @@
+{
+  "name": "Bungee Monkey",
+  "description": "An endless 2D physics arcade game where you launch elastic bungee lines across the jungle canopy.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
